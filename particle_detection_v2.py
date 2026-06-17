@@ -2,7 +2,9 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load cropped chain image
+# =====================================
+# Load Image
+# =====================================
 img = cv2.imread(
     r"C:\Users\yugal\OneDrive\Desktop\Binary chain (45).tif"
 )
@@ -11,44 +13,116 @@ if img is None:
     print("Image not found!")
     exit()
 
-# Convert to grayscale
+print("Image loaded successfully")
+print("Shape:", img.shape)
+
+# =====================================
+# Convert to Grayscale
+# =====================================
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-# Blur to reduce noise
+# =====================================
+# Reduce Noise
+# =====================================
 gray_blur = cv2.GaussianBlur(gray, (5, 5), 0)
 
-# Detect circles
+# =====================================
+# Detect Circles
+# =====================================
 circles = cv2.HoughCircles(
     gray_blur,
     cv2.HOUGH_GRADIENT,
     dp=1.2,
-    minDist=15,
-    param1=50,
-    param2=15,
-    minRadius=3,
+    minDist=18,
+    param1=60,
+    param2=18,
+    minRadius=4,
     maxRadius=40
 )
 
 output = img.copy()
 
+small_count = 0
+large_count = 0
+
+# =====================================
+# Analyze Particles
+# =====================================
 if circles is not None:
+
     circles = np.round(circles[0, :]).astype("int")
 
-    print("Particles detected:", len(circles))
+    print("\nParticles detected:", len(circles))
+    print("-" * 40)
 
     for i, (x, y, r) in enumerate(circles):
 
-        print(f"Particle {i+1}: Radius = {r}")
+        # Classification
+        if r < 14:
+            particle_type = "Small"
+            label = "S"
+            small_count += 1
+        else:
+            particle_type = "Large"
+            label = "L"
+            large_count += 1
 
-        cv2.circle(output, (x, y), r, (0, 255, 0), 2)
-        cv2.circle(output, (x, y), 2, (0, 0, 255), 3)
+        print(
+            f"Particle {i+1}: Radius = {r}, Type = {particle_type}"
+        )
+
+        # Draw particle circle
+        cv2.circle(
+            output,
+            (x, y),
+            r,
+            (0, 255, 0),
+            2
+        )
+
+        # Draw center
+        cv2.circle(
+            output,
+            (x, y),
+            2,
+            (0, 0, 255),
+            3
+        )
+
+        # Draw label
+        cv2.putText(
+            output,
+            label,
+            (x - 10, y - 10),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (255, 0, 0),
+            2
+        )
 
 else:
     print("No particles detected")
 
-# Show result
-plt.figure(figsize=(8,8))
-plt.imshow(cv2.cvtColor(output, cv2.COLOR_BGR2RGB))
-plt.title("Detected Particles")
+# =====================================
+# Summary
+# =====================================
+print("\n" + "=" * 40)
+print("SUMMARY")
+print("=" * 40)
+
+print("Small particles =", small_count)
+print("Large particles =", large_count)
+
+# =====================================
+# Display Result
+# =====================================
+plt.figure(figsize=(10, 10))
+
+plt.imshow(
+    cv2.cvtColor(output, cv2.COLOR_BGR2RGB)
+)
+
+plt.title("Particle Detection and Classification")
 plt.axis("off")
+
 plt.show()
